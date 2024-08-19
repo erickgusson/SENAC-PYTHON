@@ -1,6 +1,8 @@
 from openpyxl import Workbook, load_workbook
 import random
 
+localBombas = []
+
 def configs():
     
     try:
@@ -33,14 +35,65 @@ def configs():
 
     return config
 
-def CriarTabuleiro(linhas, colunas):
+def CriarTabuleiro():
+    config = configs()
+    linhas = config['linhas']
+    colunas = config['colunas']
+    bombas = CalcularBombas()
+    tabuleiro = []
+    cont = 1
+
+    # 0 = casa vazia | -1 = Bombas
+
     for i in range(0, int(linhas)):
-        # for j in range(0, int(colunas)):
-            # print('*', end = " ")
+        linha = []
+        for j in range(0, int(colunas)):
             # print('{:5}'.format('[ * ]'), end = " ")
+            if cont in bombas:
+                linha.append('-1')
+            else:
+                linha.append('0')
+
+            cont += 1
         # print()
-        print('[ * ] ' * int(colunas))
-        print('------' * int(colunas))
+        tabuleiro.append(linha)
+    
+    # print()
+    # print(bombas)
+    # print()
+    # print(tabuleiro)
+    # print()
+
+    gravarTabuleiro(tabuleiro)
+
+    # Função antiga
+    # for i in range(0, int(linhas)):
+    #     # for j in range(0, int(colunas)):
+    #         # print('*', end = " ")
+    #         # print('{:5}'.format('[ * ]'), end = " ")
+    #     # print()
+    #     print('[ * ] ' * int(colunas))
+    #     print('------' * int(colunas))
+
+def gravarTabuleiro(tabuleiro):
+    try:
+        wb = load_workbook(filename='campo.xlsx')
+    except:
+        wb = Workbook()
+
+    try:
+        abaJogo = wb('jogo')
+    except:
+        abaJogo = wb.create_sheet('jogo')
+
+    print()
+
+    for linha in range(1, len(tabuleiro) + 1):
+        for coluna in range(1, len(tabuleiro[0]) + 1):
+            abaJogo.cell(row=linha, column=coluna, value=tabuleiro[linha-1][coluna-1])
+    
+    print()
+    wb.save('campo.xlsx')
 
 def ConfigCampo():
 
@@ -102,28 +155,97 @@ def CalcularBombas():
         porcentoBombas = 0.50
 
     totalBombas = int(float(totalCasas) * float(porcentoBombas))
-    arrayzada = []
 
-    for i in range(0, totalBombas):
-        numeroAleatorio = random.randint(1, totalCasas)
-        if arrayzada.count(numeroAleatorio) >= 1 :
-            print('repetido')
-            i = i - 1
-        else:
-            arrayzada.append(numeroAleatorio)
-        # print('Bomba no: ' + str(arrayzada[i]))
+    bombas = []
 
-    arrayzada.sort()
-    for i in range(0, len(arrayzada)):
-        print('Bomba no: ' + str(arrayzada[i]))
+    while True:
+        posicao = random.randint(1, totalCasas)
 
-    print(totalBombas)
-    print
-    input()
+        if posicao not in bombas:
+            bombas.append(posicao)
+
+        if len(bombas) >= totalBombas:
+            break
+
+    # Função antiga
+    # for i in range(0, totalBombas):
+    #     numeroAleatorio = random.randint(1, totalCasas)
+    #     if localBombas.count(numeroAleatorio) >= 1 :
+    #         print('repetido')
+    #         i = i - 1
+    #     else:
+    #         localBombas.append(numeroAleatorio)
+    #     # print('Bomba no: ' + str(localBombas[i]))
+
+    # localBombas.sort()
+    # for i in range(0, len(localBombas)):
+    #     print('Bomba no: ' + str(localBombas[i]))
+
+    bombas.sort()
+    # print(sorted(bombas))
+    # print(totalBombas)
+    # input()
+    return bombas
+
+def jogar():
+    wb = load_workbook(filename='campo.xlsx')
+    jogo = wb['jogo']
+
+    maxLinha = jogo.max_row
+    maxColuna = jogo.max_column
+
+    gameOver = False
+
+    while True:
+
+         # [ ], ⏺, 💥
+        for linha in range(1, maxLinha+1):
+            for coluna in range(1, maxColuna+1):
+                casa = jogo.cell(row=linha, column=coluna).value
+                if int(casa) == 0 or int(casa) == -1:
+                    print('{:8}'.format('[     ]'), end='')
+                elif int(casa) == 1:
+                    print('{:8}'.format('[ 000 ]'), end='')
+                elif int(casa) == -2:
+                    print('{:8}'.format('[ xxx ]'), end='')
+            print()
+
+        linhaJogada = int(input('Linha: \033[32m'))
+        print('\033[0;0m', end='')
+        colunaJogada = int(input('Coluna: \033[32m'))
+        print('\033[0;0m', end='')
+        # linhaJogada = 5
+        # colunaJogada = 2
+
+        jogada = int(jogo.cell(row=linhaJogada, column=colunaJogada).value)
+
+        if jogada == 0:
+            jogo.cell(row=linhaJogada, column=colunaJogada, value=1)
+        elif jogada == -1:
+            jogo.cell(row=linhaJogada, column=colunaJogada, value=-2)
+            gameOver = True
+        elif jogada == 1:
+            print('Jogada ja efetuada, bora bill')
+
+
+       
+        wb.save('campo.xlsx')
+
+
+        if gameOver == True:
+            print('Perdeste, vadia 🤟')
+            input('Tentar de novo? (Y/N): ')
+            print('Pois não vai')
+            break
+
+    
+
+
 
 CalcularBombas()
+# input()
 config = configs()
-print('''\
+print('''
     _______      ____    ,---.    ,---..-------.     ,-----.            ,---.    ,---..-./`) ,---.   .--.   ____     ______         ,-----.     
    /   __  \   .'  __ `. |    \  /    |\  _(`)_ \  .'  .-,  '.          |    \  /    |\ .-.')|    \  |  | .'  __ `. |    _ `''.   .'  .-,  '.   
   | ,_/  \__) /   '  \  \|  ,  \/  ,  || (_ o._)| / ,-.|  \ _ \         |  ,  \/  ,  |/ `-' \|  ,  \ |  |/   '  \  \| _ | ) _  \ / ,-.|  \ _ \  
@@ -148,8 +270,9 @@ while True:
 
     if seletor == '1':
         print('Jogar')
-        config = configs()
-        CriarTabuleiro(config['linhas'], config['colunas'])
+        # config = configs()
+        CriarTabuleiro()
+        jogar()
 
     elif seletor == '2':
         print('Configurar')
