@@ -48,7 +48,7 @@ def CriarTabuleiro():
     for i in range(0, int(linhas)):
         linha = []
         for j in range(0, int(colunas)):
-            # print('{:5}'.format('[ * ]'), end = " ")
+            # print('{:5}'.format('[ ??? ]'), end = " ")
             if cont in bombas:
                 linha.append('-1')
             else:
@@ -82,11 +82,14 @@ def gravarTabuleiro(tabuleiro):
         wb = Workbook()
 
     try:
-        abaJogo = wb('jogo')
+        abaJogo = wb['jogo']
     except:
         abaJogo = wb.create_sheet('jogo')
 
     print()
+
+    abaJogo.delete_rows(1, abaJogo.max_row)
+    abaJogo.delete_cols(1, abaJogo.max_column)
 
     for linha in range(1, len(tabuleiro) + 1):
         for coluna in range(1, len(tabuleiro[0]) + 1):
@@ -97,18 +100,18 @@ def gravarTabuleiro(tabuleiro):
 
 def ConfigCampo():
 
-    linhas = input("Digite um numero maior que 0 (linhas): \033[32m")
+    linhas = input("Digite um numero maior que 2 (linhas): \033[32m")
     print('\033[0;0m', end='')
 
-    while int(linhas) <= 0:
-        linhas = input('digite um novo número que seja maior que zero (linhas): \033[32m')
+    while int(linhas) < 3:
+        linhas = input('digite um novo número que seja maior que dois (linhas): \033[32m')
         print('\033[0;0m', end='')
 
-    colunas = input("Digite um numero maior que 0 (Colunas): \033[32m")
+    colunas = input("Digite um numero maior que 2 (Colunas): \033[32m")
     print('\033[0;0m', end='')
 
-    while int(colunas) <= 0:
-        colunas = input('digite um novo número que seja maior que zero (Colunas): \033[32m')
+    while int(colunas) < 3:
+        colunas = input('digite um novo número que seja maior que dois (Colunas): \033[32m')
         print('\033[0;0m', end='')
 
     dificuldade = input("\n1 - Facil\n2 - Médio\n3 - Dificil \nEscolha uma nova dificuldade: \033[32m")
@@ -188,41 +191,74 @@ def CalcularBombas():
     return bombas
 
 def jogar():
-    wb = load_workbook(filename='campo.xlsx')
-    jogo = wb['jogo']
+    CriarTabuleiro()
 
-    maxLinha = jogo.max_row
-    maxColuna = jogo.max_column
-
-    gameOver = False
+    wb          = load_workbook(filename='campo.xlsx')
+    jogo        = wb['jogo']
+    maxLinha    = jogo.max_row
+    maxColuna   = jogo.max_column
+    gameOver    = False
+    jgPossivel  = (maxLinha * maxColuna) - len(CalcularBombas())
+    historico = 0
 
     while True:
 
-         # [ ], ⏺, 💥
         for linha in range(1, maxLinha+1):
             for coluna in range(1, maxColuna+1):
                 casa = jogo.cell(row=linha, column=coluna).value
-                if int(casa) == 0 or int(casa) == -1:
-                    print('{:8}'.format('[     ]'), end='')
+                if int(casa) == 0 or (int(casa) <= -1 and gameOver == False):
+                    print('{:8}'.format('[ ??? ]'), end='')
                 elif int(casa) == 1:
-                    print('{:8}'.format('[ 000 ]'), end='')
-                elif int(casa) == -2:
+                    print('{:8}'.format('[     ]'), end='')
+                elif int(casa) == -1 and gameOver == True:
                     print('{:8}'.format('[ xxx ]'), end='')
             print()
+        while True:
+            try:
+                linhaJogada = int(input('Linha: \033[32m'))
+                print('\033[0;0m', end='')
 
-        linhaJogada = int(input('Linha: \033[32m'))
-        print('\033[0;0m', end='')
-        colunaJogada = int(input('Coluna: \033[32m'))
-        print('\033[0;0m', end='')
+                if 1 <= linhaJogada <= maxLinha:
+                    break
+                else:
+                    linhaJogada = int(input('Valor invalido, seleciona um novo valor: \033[32m'))
+                    print('\033[0;0m', end='')
+
+
+            except:
+                print()
+                print('\033[0;0m', end='')
+                
+
+        while True:
+            try:
+                colunaJogada = int(input('Coluna: \033[32m'))
+                print('\033[0;0m', end='')      
+
+                if 1 <= linhaJogada <= maxLinha:
+                    break
+                else:
+                    colunaJogada = int(input('Valor invalido, seleciona um novo valor: \033[32m'))
+                    print('\033[0;0m', end='')
+
+
+            except:
+                print()
+                print('\033[0;0m', end='')
+                
+
         # linhaJogada = 5
         # colunaJogada = 2
+
+         # [ ], ⏺, 💥
 
         jogada = int(jogo.cell(row=linhaJogada, column=colunaJogada).value)
 
         if jogada == 0:
             jogo.cell(row=linhaJogada, column=colunaJogada, value=1)
-        elif jogada == -1:
-            jogo.cell(row=linhaJogada, column=colunaJogada, value=-2)
+            historico += 1
+        elif jogada <= -1:
+            # jogo.cell(row=linhaJogada, column=colunaJogada, value=-2)
             gameOver = True
         elif jogada == 1:
             print('Jogada ja efetuada, bora bill')
@@ -233,10 +269,31 @@ def jogar():
 
 
         if gameOver == True:
+            for linha in range(1, maxLinha+1):
+                for coluna in range(1, maxColuna+1):
+                    casa = jogo.cell(row=linha, column=coluna).value
+                    if int(casa) == 0 or (int(casa) <= -1 and gameOver == False):
+                        print('{:8}'.format('[ ??? ]'), end='')
+                    elif int(casa) == 1:
+                        print('{:8}'.format('[     ]'), end='')
+                    elif int(casa) == -1 and gameOver == True:
+                        print('{:8}'.format('[ xxx ]'), end='')
+                print()
+            
+
             print('Perdeste, vadia 🤟')
-            input('Tentar de novo? (Y/N): ')
-            print('Pois não vai')
             break
+
+        if historico == jgPossivel:
+            print("Ganhaste, vadia 🤟")
+            break
+    op = input('Tentar de novo? (S/N): \033[32m')
+    print('\033[0;0m', end='')
+    if str(op).upper() == 'S':
+        jogar()
+
+    
+
 
     
 
@@ -269,9 +326,8 @@ while True:
     
 
     if seletor == '1':
-        print('Jogar')
+        # print('Jogar')
         # config = configs()
-        CriarTabuleiro()
         jogar()
 
     elif seletor == '2':
